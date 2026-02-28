@@ -13,8 +13,7 @@ Arguments:
 
 Example:
 python preprocess_wav.py --root_file ./dataset_mp --output_file ./dataset_wav
-
-
+python preprocess_wav.py --root_file /Users/pakap/Documents/Senior/Code/voxceleb/vox1_2peo_mp4 --output_file /Users/pakap/Documents/Senior/Code/voxceleb/vox1_2peo_wav
 """
 
 parser = ArgumentParser()
@@ -38,14 +37,21 @@ def convert_to_wav(input_audio_path, output_audio_path):
 def process_dataset(root_file, output_file):
 
     print("Scanning dataset...")
-    ids_path = glob.glob(os.path.join(root_file, "*/"))
+
+    # Get identity folders (id10001, id10002, ...)
+    ids_path = [
+        os.path.join(root_file, d)
+        for d in os.listdir(root_file)
+        if os.path.isdir(os.path.join(root_file, d))
+    ]
     ids_path.sort()
 
     print("Dataset has {} identities".format(len(ids_path)))
 
     for i, id_path in enumerate(ids_path):
 
-        id_name = id_path.split("/")[-2]
+        id_name = os.path.basename(id_path)
+
         print("--------------------------------------------------")
         print("Identity {}/{}: {}".format(i+1, len(ids_path), id_name))
 
@@ -53,22 +59,19 @@ def process_dataset(root_file, output_file):
         output_id_path = os.path.join(output_file, id_name)
         make_path(output_id_path)
 
-        # Find all audio files recursively
-        audio_files = glob.glob(os.path.join(id_path, "**", "*.*"), recursive=True)
-        audio_files = [f for f in audio_files if f.lower().endswith((".mp", ".mp3", ".m4a"))]
+        # Only scan files directly inside id folder
+        audio_files = [
+            os.path.join(id_path, f)
+            for f in os.listdir(id_path)
+            if f.lower().endswith((".mp4", ".mp3", ".m4a", ".mp"))
+        ]
 
         print("Found {} audio files".format(len(audio_files)))
 
         for audio_path in tqdm(audio_files):
 
-            relative_path = os.path.relpath(audio_path, id_path)
-            relative_dir = os.path.dirname(relative_path)
-
-            output_subdir = os.path.join(output_id_path, relative_dir)
-            make_path(output_subdir)
-
             filename = os.path.splitext(os.path.basename(audio_path))[0] + ".wav"
-            output_audio_path = os.path.join(output_subdir, filename)
+            output_audio_path = os.path.join(output_id_path, filename)
 
             try:
                 convert_to_wav(audio_path, output_audio_path)
