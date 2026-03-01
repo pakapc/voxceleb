@@ -4,11 +4,12 @@ from pathlib import Path
 from tqdm import tqdm
 
 # --- WINDOWS PATH CONFIGURATION ---
-# INPUT_DIR = Path(r"C:\Users\Student\Downloads\Dataset\Vox1\VoxCeleb1_train_original")
-# OUTPUT_DIR = Path(r"C:\Users\Student\Downloads\Dataset\Vox1\Voxceleb1_train")
+INPUT_DIR = Path(r"C:\Users\Student\Downloads\Dataset\Vox1\VoxCeleb1_train_original")
+OUTPUT_DIR = Path(r"C:\Users\Student\Downloads\Dataset\Vox1\Voxceleb1_train")
+
 #shui
-INPUT_DIR = Path("/Users/pakap/Documents/Senior/Code/voxceleb/example_data")
-OUTPUT_DIR = Path("/Users/pakap/Documents/Senior/Code/voxceleb/example_data_wav")
+# INPUT_DIR = Path("/Users/pakap/Documents/Senior/Code/voxceleb/example_data")
+# OUTPUT_DIR = Path("/Users/pakap/Documents/Senior/Code/voxceleb/example_data_wav")
 
 def process_dataset(input_dir, output_dir):
     # Get all ID directories (id0001, id0002, etc.)
