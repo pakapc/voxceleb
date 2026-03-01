@@ -1,80 +1,45 @@
 import os
 import shutil
+from pathlib import Path
 from tqdm import tqdm
 
-# =======================
-# CONFIGURE HERE
-# =======================
-INPUT_DIR = r"C:\Users\Student\Downloads\Dataset\Vox1\VoxCeleb1_train_original"
-OUTPUT_DIR = r"C:\Users\Student\Downloads\Dataset\Vox1\VoxCeleb1_train"
-# =======================
-
-
-def make_dir(path):
-    if not os.path.exists(path):
-        os.makedirs(path)
-
+# Update these paths as needed
+INPUT_DIR = Path("/Users/pakap/Documents/Senior/Code/voxceleb/example_data")
+OUTPUT_DIR = Path("/Users/pakap/Documents/Senior/Code/voxceleb/example_data_wav")
 
 def process_dataset(input_dir, output_dir):
+    # Get all ID directories (id0001, id0002, etc.)
+    ids = [d for d in input_dir.iterdir() if d.is_dir()]
+    print(f"Found {len(ids)} identities. Processing...")
 
-    print("Scanning dataset...")
-    ids = [d for d in os.listdir(input_dir)
-           if os.path.isdir(os.path.join(input_dir, d))]
-    ids.sort()
+    for id_path in tqdm(ids, desc="Processing IDs"):
+        # Iterate through video folders (e.g., 1zcIwhmdeo4)
+        for video_path in id_path.iterdir():
+            if not video_path.is_dir():
+                continue
+            
+            # Define the target directory: OUTPUT/id0001/1zcIwhmdeo4/
+            target_video_dir = output_dir / id_path.name / video_path.name
+            target_video_dir.mkdir(parents=True, exist_ok=True)
 
-    print(f"Found {len(ids)} identities")
-
-    for id_name in tqdm(ids):
-
-        id_input_path = os.path.join(input_dir, id_name)
-        id_output_path = os.path.join(output_dir, id_name)
-        make_dir(id_output_path)
-
-        # Loop over video folders
-        videos = [v for v in os.listdir(id_input_path)
-                  if os.path.isdir(os.path.join(id_input_path, v))]
-
-        for video_name in videos:
-
-            video_input_path = os.path.join(id_input_path, video_name)
-            video_output_path = os.path.join(id_output_path, video_name)
-            make_dir(video_output_path)
-
-            chunk_path = os.path.join(video_input_path, "chunk_video")
-
-            # If chunk_video exists → move its contents up one level
-            if os.path.exists(chunk_path):
-
-                files = os.listdir(chunk_path)
-
-                for file in files:
-                    src = os.path.join(chunk_path, file)
-                    dst = os.path.join(video_output_path, file)
-
-                    if os.path.isfile(src):
-                        shutil.copy2(src, dst)
-
+            # Specifically look for the 'chunk_video' subfolder
+            chunk_folder = video_path / "chunk_video"
+            
+            if chunk_folder.exists() and chunk_folder.is_dir():
+                # Grab all files inside chunk_video and move them up to target_video_dir
+                for file in chunk_folder.iterdir():
+                    if file.is_file():
+                        shutil.copy2(file, target_video_dir / file.name)
             else:
-                # If no chunk_video folder, just copy contents normally
-                for file in os.listdir(video_input_path):
-                    src = os.path.join(video_input_path, file)
-                    dst = os.path.join(video_output_path, file)
-
-                    if os.path.isfile(src):
-                        shutil.copy2(src, dst)
-
-    print("Finished restructuring dataset.")
-
+                # Fallback: If chunk_video doesn't exist, check if files are already in video_path
+                for file in video_path.iterdir():
+                    if file.is_file():
+                        shutil.copy2(file, target_video_dir / file.name)
 
 if __name__ == "__main__":
-
-    if not os.path.exists(INPUT_DIR):
-        print("Input directory does not exist.")
-        exit()
-
-    make_dir(OUTPUT_DIR)
-
-    print("Input :", INPUT_DIR)
-    print("Output:", OUTPUT_DIR)
-
-    process_dataset(INPUT_DIR, OUTPUT_DIR)
+    if not INPUT_DIR.exists():
+        print(f"Error: Input directory {INPUT_DIR} does not exist.")
+    else:
+        OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+        process_dataset(INPUT_DIR, OUTPUT_DIR)
+        print("\n✅ Finished restructuring dataset.")
