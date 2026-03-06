@@ -26,16 +26,15 @@ ffmpeg -i input.mp4 -ac 1 -ar 16000 output.wav
 
 
 '''
-python preprocess_voxCeleb.py \
+python preprocess_wav.py \
 --root_path /Users/pakap/Documents/Senior/Code/voxceleb/example_data \
---metadata_path /Users/pakap/Documents/Senior/Code/voxceleb/list/example_data \
 --dataset vox1
 
 '''
 
 parser = ArgumentParser()
 parser.add_argument("--root_path", required=True, help="Path to VoxCeleb videos")
-parser.add_argument("--metadata_path", required=True, help="Path to metadata")
+# parser.add_argument("--metadata_path", required=True, help="Path to metadata")
 parser.add_argument("--dataset", required=True, type=str, choices=("vox1", "vox2"))
 
 parser.add_argument("--delete_videos", action="store_true")
@@ -90,7 +89,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     root_path = args.root_path
-    metadata_path = args.metadata_path
+    # metadata_path = args.metadata_path
     dataset = args.dataset
     delete_videos = args.delete_videos
 
@@ -98,9 +97,9 @@ if __name__ == "__main__":
         print(f"Videos path {root_path} does not exist")
         exit()
 
-    if not os.path.exists(metadata_path):
-        print(f"Metadata path {metadata_path} does not exist")
-        exit()
+    # if not os.path.exists(metadata_path):
+    #     print(f"Metadata path {metadata_path} does not exist")
+    #     exit()
 
     ids_path = glob.glob(os.path.join(root_path, "*/"))
     ids_path.sort()
