@@ -41,6 +41,12 @@ Arguments:
 python download_voxCeleb.py --output_path ./VoxCeleb1_test --metadata_path ./txt_test --dataset vox1 \
 	  --fail_video_ids ./fail_video_ids_test.txt --delete_mp4 --extract_frames --preprocessing
 
+###### vox1 test:
+python download_voxCeleb.py --dataset vox1 --output_path /Users/pakap/Documents/Senior/Code/Dataset/vox1/vox1_test --metadata_path /Users/pakap/Documents/Senior/Code/Dataset/vox1/vox1_test_txt --delete_mp4
+
+###### vox1 dev:
+python download_voxCeleb.py --dataset vox1 --output_path /Users/pakap/Documents/Senior/Code/Dataset/vox1/vox1_dev --metadata_path /Users/pakap/Documents/Senior/Code/Dataset/vox1/vox1_dev_txt --delete_mp4
+
 """
 
 DEVNULL = open(os.devnull, 'wb')
@@ -196,4 +202,3 @@ if __name__ == "__main__":
 				print('Error downloading video {}/{}. Deleting folder {}'.format(id_index, video_id, output_path_video))
 				command_delete = 'rm -rf {}'.format(output_path_video)
 				os.system(command_delete)
-			

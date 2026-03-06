@@ -1,100 +1,149 @@
 import os
 import glob
-from tqdm import tqdm
+import subprocess
 from argparse import ArgumentParser
-from pydub import AudioSegment
+from tqdm import tqdm
 
-"""
-Convert dataset audio files from .mp (or .mp3/.m4a) to .wav
-
-Arguments:
-    root_file:      Path where original dataset is stored
-    output_file:    Path where converted wav dataset will be saved
-
-Example:
-python preprocess_wav.py --root_file ./dataset_mp --output_file ./dataset_wav
-python preprocess_wav.py --root_file /Users/pakap/Documents/Senior/Code/voxceleb/vox1_2peo_mp4 --output_file /Users/pakap/Documents/Senior/Code/voxceleb/vox1_2peo_wav
-"""
-
-parser = ArgumentParser()
-parser.add_argument("--root_file", required=True, help="Path to input dataset")
-parser.add_argument("--output_file", required=True, help="Path to output dataset (wav format)")
-
-
+# -----------------------------
+# local replacement for make_path
+# -----------------------------
 def make_path(path):
     if not os.path.exists(path):
-        os.makedirs(path)
+        os.makedirs(path, exist_ok=True)
 
 
-def convert_to_wav(input_audio_path, output_audio_path):
-    """
-    Convert audio file to wav format
-    """
-    audio = AudioSegment.from_file(input_audio_path)
-    audio.export(output_audio_path, format="wav")
+"""
+VoxCeleb preprocessing
+Convert mp4 chunk videos into wav files using ffmpeg
+
+Output format:
+- mono channel
+- 16kHz sampling rate
+
+Equivalent to:
+ffmpeg -i input.mp4 -ac 1 -ar 16000 output.wav
+"""
 
 
-def process_dataset(root_file, output_file):
+'''
+python preprocess_voxCeleb.py \
+--root_path /Users/pakap/Documents/Senior/Code/voxceleb/example_data \
+--metadata_path /Users/pakap/Documents/Senior/Code/voxceleb/list/example_data \
+--dataset vox1
 
-    print("Scanning dataset...")
+'''
 
-    # Get identity folders (id10001, id10002, ...)
-    ids_path = [
-        os.path.join(root_file, d)
-        for d in os.listdir(root_file)
-        if os.path.isdir(os.path.join(root_file, d))
+parser = ArgumentParser()
+parser.add_argument("--root_path", required=True, help="Path to VoxCeleb videos")
+parser.add_argument("--metadata_path", required=True, help="Path to metadata")
+parser.add_argument("--dataset", required=True, type=str, choices=("vox1", "vox2"))
+
+parser.add_argument("--delete_videos", action="store_true")
+parser.set_defaults(delete_videos=False)
+
+parser.add_argument("--delete_or_frames", action="store_true")
+parser.set_defaults(delete_or_frames=False)
+
+
+# -----------------------------
+# convert mp4 -> wav
+# -----------------------------
+def convert_to_wav(input_video, output_wav):
+
+    cmd = [
+        "ffmpeg",
+        "-i", input_video,
+        "-ac", "1",
+        "-ar", "16000",
+        output_wav,
+        "-y"
     ]
-    ids_path.sort()
 
-    print("Dataset has {} identities".format(len(ids_path)))
-
-    for i, id_path in enumerate(ids_path):
-
-        id_name = os.path.basename(id_path)
-
-        print("--------------------------------------------------")
-        print("Identity {}/{}: {}".format(i+1, len(ids_path), id_name))
-
-        # Create identity output folder
-        output_id_path = os.path.join(output_file, id_name)
-        make_path(output_id_path)
-
-        # Only scan files directly inside id folder
-        audio_files = [
-            os.path.join(id_path, f)
-            for f in os.listdir(id_path)
-            if f.lower().endswith((".mp4", ".mp3", ".m4a", ".mp"))
-        ]
-
-        print("Found {} audio files".format(len(audio_files)))
-
-        for audio_path in tqdm(audio_files):
-
-            filename = os.path.splitext(os.path.basename(audio_path))[0] + ".wav"
-            output_audio_path = os.path.join(output_id_path, filename)
-
-            try:
-                convert_to_wav(audio_path, output_audio_path)
-            except Exception as e:
-                print("Error converting {}: {}".format(audio_path, e))
-
-    print("Finished converting dataset.")
+    subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
 
+# -----------------------------
+# extract wav files
+# -----------------------------
+def extract_audio(videos_tmp, output_path):
+
+    print("1. Extract wav from mp4")
+
+    make_path(output_path)
+
+    for video in tqdm(videos_tmp):
+
+        base_name = os.path.splitext(os.path.basename(video))[0]
+        output_wav = os.path.join(output_path, base_name + ".wav")
+        
+        try:
+            convert_to_wav(video, output_wav)
+        except Exception as e:
+            print(f"Error converting {video}: {e}")
+
+
+# -----------------------------
+# main
+# -----------------------------
 if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    root_file = args.root_file
-    output_file = args.output_file
+    root_path = args.root_path
+    metadata_path = args.metadata_path
+    dataset = args.dataset
+    delete_videos = args.delete_videos
 
-    if not os.path.exists(root_file):
-        print("Input dataset path does not exist.")
+    if not os.path.exists(root_path):
+        print(f"Videos path {root_path} does not exist")
         exit()
 
-    make_path(output_file)
+    if not os.path.exists(metadata_path):
+        print(f"Metadata path {metadata_path} does not exist")
+        exit()
 
-    print("Input path:  {}".format(root_file))
-    print("Output path: {}".format(output_file))
+    ids_path = glob.glob(os.path.join(root_path, "*/"))
+    ids_path.sort()
 
-    process_dataset(root_file, output_file)
+    print(f"Dataset has {len(ids_path)} identities")
+
+    for i, id_path in enumerate(ids_path):
+
+        id_index = os.path.basename(os.path.normpath(id_path))
+
+        videos_path = glob.glob(os.path.join(id_path, "*/"))
+        videos_path.sort()
+
+        print("*********************************************************")
+        print(f"Identity {i}/{len(ids_path)}")
+
+        for j, video_path in enumerate(videos_path):
+
+            video_id = os.path.basename(os.path.normpath(video_path))
+
+            print(f"{j}/{len(videos_path)} videos")
+
+            output_path_video = os.path.join(root_path, id_index, video_id)
+            chunk_path = os.path.join(output_path_video, "chunk_video")
+
+            if not os.path.exists(chunk_path):
+                print(f"path {chunk_path} does not exist")
+                continue
+
+            videos_tmp = glob.glob(os.path.join(chunk_path, "*.mp4"))
+            videos_tmp.sort()
+
+            if len(videos_tmp) == 0:
+                print(f"No videos in {chunk_path}")
+                continue
+
+            audio_output = os.path.join(output_path_video, "wav")
+
+            extract_audio(videos_tmp, audio_output)
+
+            # optional: delete mp4
+            if delete_videos:
+                for vid in videos_tmp:
+                    os.remove(vid)
+
+        print("*********************************************************")
