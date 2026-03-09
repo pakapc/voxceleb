@@ -4,13 +4,6 @@ import subprocess
 from argparse import ArgumentParser
 from tqdm import tqdm
 
-# -----------------------------
-# local replacement for make_path
-# -----------------------------
-def make_path(path):
-    if not os.path.exists(path):
-        os.makedirs(path, exist_ok=True)
-
 
 """
 VoxCeleb preprocessing
@@ -42,6 +35,13 @@ parser.set_defaults(delete_videos=False)
 
 parser.add_argument("--delete_or_frames", action="store_true")
 parser.set_defaults(delete_or_frames=False)
+
+# -----------------------------
+# local replacement for make_path
+# -----------------------------
+def make_path(path):
+    if not os.path.exists(path):
+        os.makedirs(path, exist_ok=True)
 
 
 # -----------------------------
@@ -123,7 +123,7 @@ if __name__ == "__main__":
             print(f"{j}/{len(videos_path)} videos")
 
             output_path_video = os.path.join(root_path, id_index, video_id)
-            chunk_path = os.path.join(output_path_video, "chunk_video")
+            chunk_path = os.path.join(output_path_video,"chunk_videos")
 
             if not os.path.exists(chunk_path):
                 print(f"path {chunk_path} does not exist")
